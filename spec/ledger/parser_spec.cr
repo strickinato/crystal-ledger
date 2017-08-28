@@ -5,16 +5,29 @@ describe Ledger::Parser do
   well_formatted_transaction = <<-LEDGER
 2017/06/15 * Taco Truck
     ;here's a comment
-    Liabilities:CreditCard:Chase:SapphireReserve       -$12.00
-    Expenses:Food:Lunch Buys
+    Assets:Checking
+    Expenses:Food:Lunch Buys   -$12.00
+
 LEDGER
 
   describe "#parse_transaction" do
     it "should handle transactions" do
       parser = Ledger::Parser.new(well_formatted_transaction)
       parsed_transaction = parser.parse_transaction
-      parsed_transaction.should eq [ Time.new(2017, 6, 15), true, "Taco Truck", "here's a comment" ]
-      parser.buffer.offset.should eq 46
+      entries = [
+        Ledger::Transaction::Entry.new(account: "Assets:Checking", value: nil),
+        Ledger::Transaction::Entry.new(account: "Expenses:Food:Lunch Buys", value: -1200),
+      ]
+      expected_transaction = Ledger::Transaction.new(
+        date: Time.new(2017, 6, 15),
+        cleared: true,
+        description: "Taco Truck",
+        comments: [ "here's a comment" ],
+        entries: entries,
+        tags: [] of String,
+      )
+
+      parsed_transaction.should eq expected_transaction
     end
   end
 
@@ -89,6 +102,52 @@ LEDGER
         parsed_comment = Ledger::Parser.new(comment_string).parse_comment
         parsed_comment.should eq " this is a comment"
       end
+    end
+
+    describe "#parse_comments" do
+      it "creates an array of the comments" do
+        comment_string = "    ; this is a comment\n    Transaction:Actually"
+        parsed_comment = Ledger::Parser.new(comment_string).parse_comments
+        parsed_comment.should eq [" this is a comment"]
+      end
+
+      it "is an empty array if no comments" do
+        comment_string = "Transaction:Here\n"
+        parsed_comment = Ledger::Parser.new(comment_string).parse_comments
+        parsed_comment.should eq [] of String
+      end
+    end
+  end
+
+  describe "#parse_entry" do
+    it "creates an entry from a standard entry" do
+      entry_line = "    Transaction:Entry  $12.00\n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: 1200)
+    end
+
+    it "creates an entry from a negative entry" do
+      entry_line = "    Transaction:Entry  $-12.00\n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: -1200)
+    end
+
+    it "creates an entry from a negative entry with weird currency order" do
+      entry_line = "    Transaction:Entry  -$12.00\n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: -1200)
+    end
+
+    it "creates an entry if user was lazy and didn't type full value" do
+      entry_line = "    Transaction:Entry  $12\n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: 1200)
+    end
+
+    it "creates an entry with a nil value" do
+      entry_line = "    Transaction:Entry\n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: nil)
     end
   end
 end

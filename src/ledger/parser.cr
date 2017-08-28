@@ -12,12 +12,20 @@ class Ledger::Parser
   end
 
   def parse_transaction
-    time = parse_time
+    date = parse_time
     cleared = parse_cleared
     description = parse_description
-    comment = parse_comment
+    comments = parse_comments
+    entries = parse_entries
 
-    [ time, cleared, description, comment ]
+    Ledger::Transaction.new(
+      date: date,
+      cleared: cleared,
+      description: description,
+      comments: comments,
+      tags: [] of String,
+      entries: entries
+    )
   end
 
   def parse_time : Time
@@ -48,12 +56,82 @@ class Ledger::Parser
     end
   end
 
+  def parse_comments : Array(String)
+    comments = [] of String
+    while true
+      comment = parse_comment
+      if comment.is_a?(String)
+        comments.push comment
+      else
+        break
+      end
+    end
+
+    comments.compact
+  end
+
   def parse_comment : String | Nil
     maybe_comment_string = @buffer.scan(/    ;(.*)\n/)
     if maybe_comment_string
       @buffer[1]
     else
       nil
+    end
+  end
+
+  def parse_entries
+    entries = [] of Ledger::Transaction::Entry
+    while true
+      entry = parse_entry
+      if entry.is_a?(Ledger::Transaction::Entry)
+        entries.push entry
+      else
+        break
+      end
+    end
+
+    entries.compact
+  end
+
+  def parse_entry : Ledger::Transaction::Entry | Nil
+    entry_string = @buffer.scan_until(/\n/)
+    if entry_string.is_a?(String)
+      if match = /    (.+(?=  ))(.*)\n/.match(entry_string)
+        account = match[1].strip
+        value = parse_value(match[2].strip)
+        Ledger::Transaction::Entry.new(account: account, value: value)
+
+      elsif match = /    (.+)\n/.match(entry_string)
+        account = match[1].strip
+        value = nil
+        Ledger::Transaction::Entry.new(account: account, value: nil)
+      else
+        raise ParserException.new("Must have two spaces before value")
+      end
+    end
+  end
+
+  private def parse_value(value : String) : Int32
+    if match = /-\$(\d+\.\d+)/.match(value)
+      float = Float32.new(match[1])
+      -(float * 100).to_i
+    elsif match = /\$-(\d+\.\d+)/.match(value)
+      float = Float32.new(match[1])
+      -(float * 100).to_i
+    elsif match = /-\$(\d+)/.match(value)
+       int = Int32.new(match[1])
+      -(int * 100)
+    elsif match = /\$-(\d+)/.match(value)
+      int = Int32.new(match[1])
+      -(int * 100)
+    elsif match = /\$(\d+\.\d+)/.match(value)
+      float = Float32.new(match[1])
+      (float * 100).to_i
+    elsif match = /\$(\d+)/.match(value)
+      int = Int32.new(match[1])
+      (int * 100)
+    else
+      raise ParserException.new("Not a legit value")
     end
   end
 end
