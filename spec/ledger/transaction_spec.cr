@@ -25,6 +25,55 @@ describe Ledger::Transaction do
                                   ]
   end
 
+  describe "#to_string" do
+    it "handles a cleared transaction" do
+      transaction = Ledger::Transaction.new(
+        date: Time.new(2015, 10, 10),
+        cleared: true,
+        description: "Hey - here's a transaction",
+        tags: ["hello", "bybye"],
+        comments: ["This is a comment"],
+        entries: [
+          Ledger::Transaction::Entry.new(account: "Asset:Checking", value: nil),
+          Ledger::Transaction::Entry.new(account: "Expenses:Farts", value: 321)
+        ]
+      )
+
+      expected = <<-EXPECTED
+      2015/10/10 * Hey - here's a transaction
+          ;This is a comment
+          Expenses:Farts                                       $3.21
+          Asset:Checking
+      EXPECTED
+
+      transaction.to_string.should eq expected
+    end
+
+    it "handles many entries" do
+      transaction = Ledger::Transaction.new(
+        date: Time.new(2015, 10, 10),
+        cleared: false,
+        description: "Hey - here's a transaction",
+        tags: ["hello", "bybye"],
+        comments: [] of String,
+        entries: [
+          Ledger::Transaction::Entry.new(account: "Asset:Checking", value: nil),
+          Ledger::Transaction::Entry.new(account: "Expenses:Farts", value: 321),
+          Ledger::Transaction::Entry.new(account: "Expenses:Hello", value: -3912)
+        ]
+      )
+
+      expected = <<-EXPECTED
+      2015/10/10 Hey - here's a transaction
+          Expenses:Farts                                       $3.21
+          Expenses:Hello                                     $-39.12
+          Asset:Checking
+      EXPECTED
+
+      transaction.to_string.should eq expected
+    end
+  end
+
   describe "validates the data" do
     context "given NO entries" do
       it "it should tell us we need entries" do

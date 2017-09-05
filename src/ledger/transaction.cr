@@ -7,6 +7,28 @@ struct Ledger::Transaction
     property :account, :value
     def initialize(@account : String, @value : Int32 | Nil)
     end
+
+    def to_string
+      case value
+      when Int32
+        "    #{account}#{p_value}"
+      when Nil
+        "    #{account}"
+      end
+    end
+
+    def p_value
+      _value = value
+      if _value.is_a? Int32
+        value_string = "$#{_value / 100.00}"
+        length = value_string.size
+        spaces = " " * (62 - 4 - account.size - length)
+
+        "#{spaces}#{value_string}"
+      else
+        ""
+      end
+    end
   end
 
   def initialize(
@@ -24,6 +46,38 @@ struct Ledger::Transaction
 
   def cleared?
     @cleared
+  end
+
+  def to_string
+      <<-STRING
+      #{p_date} #{p_cleared}#{description}#{p_comments}
+      #{p_entries}
+      STRING
+  end
+
+  def p_entries
+    ordered_entries.map { |e| e.to_string }.join("\n")
+  end
+
+  def ordered_entries
+    values, empties = entries.partition do |entry|
+      entry.value.is_a?(Int32)
+    end
+    values + empties
+  end
+
+  def p_comments
+    comments.map do |comment|
+      "\n    ;#{comment}"
+    end.join("")
+  end
+
+  def p_date
+    date.to_s("%Y/%m/%d")
+  end
+
+  def p_cleared
+    cleared? ? "* " : ""
   end
 
   private def blank_entries

@@ -2,13 +2,23 @@ require "string_scanner"
 
 class Ledger::Parser
 
-  getter :buffer
+  getter :buffer, :transactions
 
   class ParserException< Exception; end
 
   def initialize(string : String)
     @buffer = StringScanner.new(string)
     @transactions = [] of Ledger::Transaction
+  end
+
+  def parse_transactions
+    while !@buffer.eos?
+      if @buffer.check(/\d{4}/)
+        @transactions << parse_transaction
+      else
+        @buffer.scan_until(/\n/) || break
+      end
+    end
   end
 
   def parse_transaction
@@ -82,11 +92,13 @@ class Ledger::Parser
   def parse_entries
     entries = [] of Ledger::Transaction::Entry
     while true
-      entry = parse_entry
-      if entry.is_a?(Ledger::Transaction::Entry)
-        entries.push entry
+      if @buffer.check(/    .*\n/)
+        entry = parse_entry
+        if entry.is_a?(Ledger::Transaction::Entry)
+          entries.push entry
+        end
       else
-        break
+        return entries
       end
     end
 
@@ -105,6 +117,7 @@ class Ledger::Parser
         account = match[1].strip
         value = nil
         Ledger::Transaction::Entry.new(account: account, value: nil)
+
       else
         raise ParserException.new("Must have two spaces before value")
       end

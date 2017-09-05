@@ -10,6 +10,40 @@ describe Ledger::Parser do
 
 LEDGER
 
+  describe "#parse_transactions" do
+    it "can handle 1 perfect" do
+      parser = Ledger::Parser.new(well_formatted_transaction)
+      parser.parse_transactions
+      parser.transactions.size.should eq 1
+    end
+
+    it "can handle newlines between transactions" do
+      transactions = <<-LEDGER
+2017/06/15 * Taco Truck
+    ;here's a comment
+    Assets:Checking
+    Expenses:Food:Lunch Buys   -$12.00
+
+
+2017/06/15 * Taco Truck
+    ;here's a comment
+    Expenses:Food:Lunch Buys   -$12.00
+    Assets:Checking
+2017/06/15 * Taco Truck
+    ;here's a comment
+    Expenses:Food:Lunch Buys   -$12.00
+    Assets:Checking
+
+    ;comment
+    ;comment
+LEDGER
+
+      parser = Ledger::Parser.new(transactions)
+      parser.parse_transactions
+      parser.transactions.size.should eq 3
+    end
+  end
+
   describe "#parse_transaction" do
     it "should handle transactions" do
       parser = Ledger::Parser.new(well_formatted_transaction)
