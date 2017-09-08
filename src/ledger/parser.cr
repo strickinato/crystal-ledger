@@ -6,6 +6,10 @@ class Ledger::Parser
 
   class ParserException< Exception; end
 
+  def self.from_file(filename) : Ledger::Parser
+    new File.read(filename)
+  end
+
   def initialize(string : String)
     @buffer = StringScanner.new(string)
     @transactions = [] of Ledger::Transaction
@@ -62,7 +66,7 @@ class Ledger::Parser
     if maybe_description_string
       @buffer[1]
     else
-      raise ParserException.new("Must have a description")
+      raise ParserException.new("Must have a description: #{@buffer.inspect}")
     end
   end
 
@@ -108,10 +112,15 @@ class Ledger::Parser
   def parse_entry : Ledger::Transaction::Entry | Nil
     entry_string = @buffer.scan_until(/\n/)
     if entry_string.is_a?(String)
-      if match = /    (.+(?=  ))(.*)\n/.match(entry_string)
+      if match = /    (.+(?=  ))\ *([$0-9-\.]+)\n/.match(entry_string)
         account = match[1].strip
         value = parse_value(match[2].strip)
         Ledger::Transaction::Entry.new(account: account, value: value)
+
+      elsif match = /    (.+(?=\ \ )\ *)\n/.match(entry_string)
+        account = match[1].strip
+        value = nil
+        Ledger::Transaction::Entry.new(account: account, value: nil)
 
       elsif match = /    (.+)\n/.match(entry_string)
         account = match[1].strip
@@ -126,25 +135,19 @@ class Ledger::Parser
 
   private def parse_value(value : String) : Int32
     if match = /-\$(\d+\.\d+)/.match(value)
-      float = Float32.new(match[1])
-      -(float * 100).to_i
+      - Int32.new(match[1].delete('.'))
     elsif match = /\$-(\d+\.\d+)/.match(value)
-      float = Float32.new(match[1])
-      -(float * 100).to_i
+      - Int32.new(match[1].delete('.'))
     elsif match = /-\$(\d+)/.match(value)
-       int = Int32.new(match[1])
-      -(int * 100)
+      - Int32.new(match[1]) * 100
     elsif match = /\$-(\d+)/.match(value)
-      int = Int32.new(match[1])
-      -(int * 100)
+      - Int32.new(match[1]) * 100
     elsif match = /\$(\d+\.\d+)/.match(value)
-      float = Float32.new(match[1])
-      (float * 100).to_i
+      Int32.new(match[1].delete('.'))
     elsif match = /\$(\d+)/.match(value)
-      int = Int32.new(match[1])
-      (int * 100)
+      Int32.new(match[1]) * 100
     else
-      raise ParserException.new("Not a legit value")
+      raise ParserException.new("Not a legit value: #{@buffer.inspect}")
     end
   end
 end

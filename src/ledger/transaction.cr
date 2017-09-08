@@ -98,14 +98,14 @@ struct Ledger::Transaction
 
   private def validate_at_most_one_blank_entry
     if blank_entries.size > 1
-      raise InvalidEntriesException.new("Can't have multiple blank entries")
+      raise InvalidEntriesException.new("Can't have multiple blank entries: description: #{description}\n date: #{date}")
     end
   end
 
   private def validate_entries_balance
     if entries.size == explicit_values.size
       if explicit_values.sum > 0.001 || explicit_values.sum < -0.001
-        raise InvalidEntriesException.new("Debits and Credits don't balance to 0.00")
+        raise InvalidEntriesException.new("Debits and Credits don't balance to 0.00:\n  description #{description}\n  date: #{date}")
       end
     end
   end

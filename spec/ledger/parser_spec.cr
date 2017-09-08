@@ -183,5 +183,11 @@ LEDGER
       parsed_entry = Ledger::Parser.new(entry_line).parse_entry
       parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: nil)
     end
+
+    it "knows a buncha whitespace is nil" do
+      entry_line = "    Transaction:Entry     \n"
+      parsed_entry = Ledger::Parser.new(entry_line).parse_entry
+      parsed_entry.should eq Ledger::Transaction::Entry.new(account: "Transaction:Entry", value: nil)
+    end
   end
 end
