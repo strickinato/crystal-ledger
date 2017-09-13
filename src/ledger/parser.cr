@@ -133,7 +133,7 @@ class Ledger::Parser
     end
   end
 
-  private def parse_value(value : String) : Int32
+  def parse_value(value : String) : Int32
     if match = /-\$(\d+\.\d+)/.match(value)
       - Int32.new(match[1].delete('.'))
     elsif match = /\$-(\d+\.\d+)/.match(value)
