@@ -1,6 +1,4 @@
-require "./ledger/parser"
-require "./ledger/transaction"
-require "./ledger/value"
+require "./ledger/**"
 
 module Ledger
 end

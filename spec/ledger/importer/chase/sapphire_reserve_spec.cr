@@ -1,17 +1,17 @@
 require "spec"
-require "../../src/ledger/importer/chase_reserve"
+require "../../src/ledger"
 
-describe Ledger::Importer::ChaseReserve do
+describe Ledger::Importer::Chase::SapphireReserve do
   csv = <<-CSV
 Type,Trans Date,Post Date,Description,Amount
 Sale,09/09/2017,09/11/2017,SEX PALACE GOOD T*MES,-6.65
 CSV
 
   it "instantiates" do
-    Ledger::Importer::ChaseReserve.new(csv: csv).is_a?(Ledger::Importer::ChaseReserve)
+    Ledger::Importer::Chase::SapphireReserve.new(csv: csv).is_a?(Ledger::Importer::Chase::SapphireReserve)
   end
 
-  transaction = Ledger::Importer::ChaseReserve.new(csv: csv).transactions.first
+  transaction = Ledger::Importer::Chase::SapphireReserve.new(csv: csv).transactions.first
   entries = transaction.entries
 
   it "sets the date" do

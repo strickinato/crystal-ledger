@@ -32,17 +32,16 @@ abstract class Ledger::Importer::Base
   end
 
   def print
-    @transactions.to_string.join("\n")
+    @transactions.reverse.map {|t| t.to_string }.join("\n")
   end
 
-  macro map_header(name, header, block)
+  macro header(name, header, block)
     def {{name}}(row)
       {{block}}.call(row[{{header}}])
     end
   end
 
   abstract def account
-
   abstract def date(string)
   abstract def cleared(string)
   abstract def description(string)
