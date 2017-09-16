@@ -4,7 +4,7 @@ abstract class Ledger::Importer::Base
   @transactions : Array(Ledger::Transaction)
   getter :transactions
 
-  NOT_YET_SORTED = "????????????"
+  NOT_YET_SORTED = "???"
 
   def initialize(@csv : String | IO)
     @transactions = parse_csv CSV.new(csv, headers: true)
@@ -25,9 +25,8 @@ abstract class Ledger::Importer::Base
     transactions
   end
 
-  abstract def make_entries(row) : Array( Ledger::Transaction::Entry )
-    [
-      Ledger::Transaction::Entry.new(account: account, value: value(row),
+  def make_entries(row) : Array(Ledger::Transaction::Entry)
+    [ Ledger::Transaction::Entry.new(account: account, value: value(row)),
       Ledger::Transaction::Entry.new(account: NOT_YET_SORTED, value: nil)
     ]
   end

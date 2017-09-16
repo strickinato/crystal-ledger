@@ -1,4 +1,4 @@
-class Ledger::Importer::Chase < Ledger::Importer::Base
+class Ledger::Importer::ChaseReserve < Ledger::Importer::Base
 
   map_header date, "Trans Date", ->(time : String) { Time.parse(time, "%m/%d/%Y") }
 
@@ -6,7 +6,7 @@ class Ledger::Importer::Chase < Ledger::Importer::Base
 
   map_header description, "Description", ->(description : String) { description }
 
-  map_header value, "Ammount", ->(amount : String) { Ledger::Parser.parse_value(amount) } # TODO move to shared utility class
+  map_header value, "Amount", ->(amount : String) { Ledger::Value.from_string(amount) }
 
   def account
     "Liabilities:CreditCard:Chase:SapphireReserve"

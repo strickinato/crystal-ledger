@@ -114,7 +114,7 @@ class Ledger::Parser
     if entry_string.is_a?(String)
       if match = /    (.+(?=  ))\ *([$0-9-\.]+)\n/.match(entry_string)
         account = match[1].strip
-        value = parse_value(match[2].strip)
+        value = Ledger::Value.from_string(match[2].strip)
         Ledger::Transaction::Entry.new(account: account, value: value)
 
       elsif match = /    (.+(?=\ \ )\ *)\n/.match(entry_string)
@@ -130,24 +130,6 @@ class Ledger::Parser
       else
         raise ParserException.new("Must have two spaces before value")
       end
-    end
-  end
-
-  def parse_value(value : String) : Int32
-    if match = /-\$(\d+\.\d+)/.match(value)
-      - Int32.new(match[1].delete('.'))
-    elsif match = /\$-(\d+\.\d+)/.match(value)
-      - Int32.new(match[1].delete('.'))
-    elsif match = /-\$(\d+)/.match(value)
-      - Int32.new(match[1]) * 100
-    elsif match = /\$-(\d+)/.match(value)
-      - Int32.new(match[1]) * 100
-    elsif match = /\$(\d+\.\d+)/.match(value)
-      Int32.new(match[1].delete('.'))
-    elsif match = /\$(\d+)/.match(value)
-      Int32.new(match[1]) * 100
-    else
-      raise ParserException.new("Not a legit value: #{@buffer.inspect}")
     end
   end
 end
