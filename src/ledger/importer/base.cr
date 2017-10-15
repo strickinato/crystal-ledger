@@ -48,9 +48,27 @@ abstract class Ledger::Importer::Base
   #  end
   #end
   #```
-  macro header(name, header, block)
-    def {{name}}(row)
+  macro header(method_name, header, block)
+    def {{method_name}}(row)
       {{block}}.call(row[{{header}}])
+    end
+  end
+
+  macro index(method_name, position, block)
+    def {{method_name}}(row)
+      {{block}}.call(row[{{position}}])
+    end
+  end
+
+  macro always(method_name, value)
+    def {{method_name}}(_row)
+      {{value}}
+    end
+  end
+
+  macro custom(method_name, block)
+    def {{method_name}}(row)
+      {{block}}.call(row)
     end
   end
 
@@ -58,7 +76,8 @@ abstract class Ledger::Importer::Base
   private abstract def date(strformat : String) : Time
   private abstract def cleared(strformat : String) : Boolean
   private abstract def description(description : String)
-  private abstract def value(value : String)
+  private abstract def value(value : String | CSV)
+  private abstract def comment(value : String | CSV)
 
   private def make_entries(row) : Array(Ledger::Transaction::Entry)
     [ Ledger::Transaction::Entry.new(account: account, value: value(row)),
@@ -74,8 +93,8 @@ abstract class Ledger::Importer::Base
         cleared: cleared(row),
         description: description(row),
         entries: make_entries(row),
+        comments: [ comment(row) ],
         tags: [] of String,
-                    comments: [] of String
       )
     end
     transactions

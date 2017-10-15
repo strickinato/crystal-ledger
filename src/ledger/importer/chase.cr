@@ -3,4 +3,6 @@ abstract class Ledger::Importer::Chase < Ledger::Importer::Base
   header cleared, "Post Date", ->(time : String) { true }
   header description, "Description", ->(description : String) { description }
   header value, "Amount", ->(amount : String) { Ledger::Value.from_string(amount) }
+
+  always comment, [] of String
 end
